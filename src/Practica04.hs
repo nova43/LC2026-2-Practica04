@@ -32,6 +32,23 @@ type Interpretacion = [( String , Bool ) ]
 type Estado = ( Interpretacion , [Clausula])
 data ArbolDPLL = Node Estado ArbolDPLL | Branch Estado ArbolDPLL ArbolDPLL | Void deriving Show
 
+{-
+Coso random de la clase
+esUnitaria :: Clausula -> Bool
+esUnitaria [x] = True
+esUnitaria xs = False
+
+obtenerNombre :: Literal -> String
+obtenerNombre (Var x) = x
+obtenerNombre (Not (Var x)) = x
+
+tieneInterpretacion :: String -> Interpretacion -> Bool
+tieneInterpretacion _ [] = False
+tieneInterpretacion x ((y,b):ys) = if x == y
+                            then True
+                            else tieneInterpretacion x ys
+-}
+
 --IMPLEMENTACION PARTE 1
 --Ejercicio 1
 conflict :: Estado -> Bool
@@ -44,6 +61,27 @@ success = undefined
 --Ejercicio 3
 unit :: Estado -> Estado
 unit = undefined
+
+{- Transcripcion del codigo dado en clase
+obtenerLiteral [x] = x
+obtenerLiteral xd = Var "foo"
+
+darValor :: Clausula -> Interpretacion
+darValor [Var p] = [(p, True)]
+darValor [Not (Var p)] = [(p,False)]
+
+acumularClausula :: Estado -> Estado -> Estado
+acumularClausula (_,xs) (12, ys) = (12, xs ++ ys)
+
+unit :: Estado -> Estado
+unit (modelo,[]) = (modelo, [])
+unit (modelo, c:xs) = if esUnitaria c
+    then if tieneInterpretacion (obtenerNombre (obtenerLiteral c)) modelo
+        then acumularClausula ([], [c]) (unit (modelo,xs))
+        else (modelo ++ darValor c,xs)
+    else acumularClausula ([], [c]) (unit (modelo,xs))
+
+-}
 
 --Ejercicio 4
 elim :: Estado -> Estado
