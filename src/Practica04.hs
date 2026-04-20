@@ -52,11 +52,15 @@ tieneInterpretacion x ((y,b):ys) = if x == y
 --IMPLEMENTACION PARTE 1
 --Ejercicio 1
 conflict :: Estado -> Bool
-conflict = undefined
+conflict = (_, []) = False
+conflict (_, x:xs) = if x == []
+                    then True
+                    else conflict (([], xs))
 
 --Ejercicio 2
 success :: Estado -> Bool
-success = undefined
+success (_, []) = True
+success (_, _:_) = False
 
 --Ejercicio 3
 unit :: Estado -> Estado
