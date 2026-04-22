@@ -49,56 +49,120 @@ tieneInterpretacion x ((y,b):ys) = if x == y
                             else tieneInterpretacion x ys
 -}
 
---IMPLEMENTACION PARTE 1
---Ejercicio 1
-conflict :: Estado -> Bool
-conflict = (_, []) = False
-conflict (_, x:xs) = if x == []
-                    then True
-                    else conflict (([], xs))
+-- =========================
+-- AUXILIARES
+-- =========================
 
---Ejercicio 2
+esUnitaria :: Clausula -> Bool
+esUnitaria [_] = True
+esUnitaria _   = False
+
+obtenerLiteral :: Clausula -> Literal
+obtenerLiteral [x] = x
+obtenerLiteral _   = error "No es clausula unitaria"
+
+nombreLiteral :: Literal -> String
+nombreLiteral (Var x)     = x
+nombreLiteral (Not (Var x)) = x
+nombreLiteral _ = error "Literal invalido"
+
+valorLiteral :: Literal -> Bool
+valorLiteral (Var _)       = True
+valorLiteral (Not _)       = False
+valorLiteral _             = error "Literal invalido"
+
+tieneInterpretacion :: String -> Interpretacion -> Bool
+tieneInterpretacion _ [] = False
+tieneInterpretacion x ((y,_):ys)
+    | x == y    = True
+    | otherwise = tieneInterpretacion x ys
+
+agregarInterpretacion :: Literal -> Interpretacion -> Interpretacion
+agregarInterpretacion l i =
+    (nombreLiteral l, valorLiteral l) : i
+
+-- =========================
+-- EJERCICIO 1
+-- =========================
+
+conflict :: Estado -> Bool
+conflict (_, []) = False
+conflict (_, c:cs)
+    | c == []  = True
+    | otherwise = conflict ([], cs)
+
+-- =========================
+-- EJERCICIO 2
+-- =========================
+
 success :: Estado -> Bool
 success (_, []) = True
-success (_, _:_) = False
+success _       = False
 
---Ejercicio 3
-unit :: Estado -> Estado
-unit = undefined
-
-{- Transcripcion del codigo dado en clase
-obtenerLiteral [x] = x
-obtenerLiteral xd = Var "foo"
-
-darValor :: Clausula -> Interpretacion
-darValor [Var p] = [(p, True)]
-darValor [Not (Var p)] = [(p,False)]
-
-acumularClausula :: Estado -> Estado -> Estado
-acumularClausula (_,xs) (12, ys) = (12, xs ++ ys)
+-- =========================
+-- EJERCICIO 3 (UNIT)
+-- =========================
 
 unit :: Estado -> Estado
-unit (modelo,[]) = (modelo, [])
-unit (modelo, c:xs) = if esUnitaria c
-    then if tieneInterpretacion (obtenerNombre (obtenerLiteral c)) modelo
-        then acumularClausula ([], [c]) (unit (modelo,xs))
-        else (modelo ++ darValor c,xs)
-    else acumularClausula ([], [c]) (unit (modelo,xs))
+unit (i, []) = (i, [])
+unit (i, c:cs)
+    | esUnitaria c =
+        let l = obtenerLiteral c
+        in if tieneInterpretacion (nombreLiteral l) i
+           then unit (i, cs)
+           else unit (agregarInterpretacion l i, cs)
+    | otherwise =
+        let (i', cs') = unit (i, cs)
+        in (i', c:cs')
 
--}
+-- =========================
+-- EJERCICIO 4 (ELIM)
+-- elimina clausulas satisfechas
+-- =========================
 
---Ejercicio 4
+satisfaceLiteral :: Interpretacion -> Literal -> Bool
+satisfaceLiteral [] _ = False
+satisfaceLiteral ((x,b):xs) l
+    | nombreLiteral l == x = valorLiteral l == b
+    | otherwise = satisfaceLiteral xs l
+
+satisfaceClausula :: Interpretacion -> Clausula -> Bool
+satisfaceClausula i = any (satisfaceLiteral i)
+
 elim :: Estado -> Estado
-elim = undefined
+elim (i, cs) = (i, filter (not . satisfaceClausula i) cs)
 
---Ejercicio 5
+-- =========================
+-- EJERCICIO 5 (RED)
+-- elimina literales falsos dentro de clausulas
+-- =========================
+
+literalFalso :: Interpretacion -> Literal -> Bool
+literalFalso [] _ = False
+literalFalso ((x,b):xs) l
+    | nombreLiteral l == x = valorLiteral l /= b
+    | otherwise = literalFalso xs l
+
+reducirClausula :: Interpretacion -> Clausula -> Clausula
+reducirClausula i = filter (not . literalFalso i)
+
 red :: Estado -> Estado
-red = undefined
+red (i, cs) = (i, map (reducirClausula i) cs)
 
+-- =========================
+-- EJERCICIO 6 (SEP)
+-- =========================
 
---Ejercicio 6
+negar :: Literal -> Literal
+negar (Var x)     = Not (Var x)
+negar (Not (Var x)) = Var x
+negar _ = error "Literal invalido"
+
 sep :: Literal -> Estado -> (Estado, Estado)
-sep = undefined
+sep l (i, cs) =
+    ( (agregarInterpretacion l i, cs)
+    , (agregarInterpretacion (negar l) i, cs)
+    )
 
 --IMPLEMENTACION PARTE 2
 
