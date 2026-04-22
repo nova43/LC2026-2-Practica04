@@ -49,9 +49,9 @@ tieneInterpretacion x ((y,b):ys) = if x == y
                             else tieneInterpretacion x ys
 -}
 
--- =========================
--- AUXILIARES
--- =========================
+=========================
+AUXILIARES
+=========================
 
 esUnitaria :: Clausula -> Bool
 esUnitaria [_] = True
@@ -81,9 +81,9 @@ agregarInterpretacion :: Literal -> Interpretacion -> Interpretacion
 agregarInterpretacion l i =
     (nombreLiteral l, valorLiteral l) : i
 
--- =========================
--- EJERCICIO 1
--- =========================
+=========================
+   EJERCICIO 1
+=========================
 
 conflict :: Estado -> Bool
 conflict (_, []) = False
@@ -91,17 +91,17 @@ conflict (_, c:cs)
     | c == []  = True
     | otherwise = conflict ([], cs)
 
--- =========================
--- EJERCICIO 2
--- =========================
+=========================
+   EJERCICIO 2
+=========================
 
 success :: Estado -> Bool
 success (_, []) = True
 success _       = False
 
--- =========================
--- EJERCICIO 3 (UNIT)
--- =========================
+=========================
+  EJERCICIO 3 
+=========================
 
 unit :: Estado -> Estado
 unit (i, []) = (i, [])
@@ -115,10 +115,10 @@ unit (i, c:cs)
         let (i', cs') = unit (i, cs)
         in (i', c:cs')
 
--- =========================
--- EJERCICIO 4 (ELIM)
--- elimina clausulas satisfechas
--- =========================
+=========================
+  EJERCICIO 4 
+elimina clausulas satisfechas
+=========================
 
 satisfaceLiteral :: Interpretacion -> Literal -> Bool
 satisfaceLiteral [] _ = False
@@ -132,10 +132,10 @@ satisfaceClausula i = any (satisfaceLiteral i)
 elim :: Estado -> Estado
 elim (i, cs) = (i, filter (not . satisfaceClausula i) cs)
 
--- =========================
--- EJERCICIO 5 (RED)
--- elimina literales falsos dentro de clausulas
--- =========================
+=========================
+  EJERCICIO 5 (RED)
+elimina literales falsos dentro de clausulas
+=========================
 
 literalFalso :: Interpretacion -> Literal -> Bool
 literalFalso [] _ = False
@@ -149,9 +149,9 @@ reducirClausula i = filter (not . literalFalso i)
 red :: Estado -> Estado
 red (i, cs) = (i, map (reducirClausula i) cs)
 
--- =========================
--- EJERCICIO 6 (SEP)
--- =========================
+=========================
+   EJERCICIO 6 (SEP)
+=========================
 
 negar :: Literal -> Literal
 negar (Var x)     = Not (Var x)
