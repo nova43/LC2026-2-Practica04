@@ -47,11 +47,11 @@ tieneInterpretacion _ [] = False
 tieneInterpretacion x ((y,b):ys) = if x == y
                             then True
                             else tieneInterpretacion x ys
--}
 
 =========================
 AUXILIARES
 =========================
+-}
 
 esUnitaria :: Clausula -> Bool
 esUnitaria [_] = True
@@ -81,27 +81,29 @@ agregarInterpretacion :: Literal -> Interpretacion -> Interpretacion
 agregarInterpretacion l i =
     (nombreLiteral l, valorLiteral l) : i
 
+
+{-
 =========================
    EJERCICIO 1
 =========================
+-}
 
 conflict :: Estado -> Bool
 conflict (_, []) = False
-conflict (_, c:cs)
-    | c == []  = True
-    | otherwise = conflict ([], cs)
+conflict (_, x:xs) = if x == []
+                    then True
+                    else conflict (([], xs))
 
-=========================
-   EJERCICIO 2
-=========================
-
+--Ejercicio 2
 success :: Estado -> Bool
 success (_, []) = True
 success _       = False
 
+{-
 =========================
   EJERCICIO 3 
 =========================
+-}
 
 unit :: Estado -> Estado
 unit (i, []) = (i, [])
@@ -115,10 +117,12 @@ unit (i, c:cs)
         let (i', cs') = unit (i, cs)
         in (i', c:cs')
 
+{-
 =========================
   EJERCICIO 4 
 elimina clausulas satisfechas
 =========================
+-}
 
 satisfaceLiteral :: Interpretacion -> Literal -> Bool
 satisfaceLiteral [] _ = False
@@ -132,10 +136,12 @@ satisfaceClausula i = any (satisfaceLiteral i)
 elim :: Estado -> Estado
 elim (i, cs) = (i, filter (not . satisfaceClausula i) cs)
 
+{-
 =========================
   EJERCICIO 5 (RED)
 elimina literales falsos dentro de clausulas
 =========================
+-}
 
 literalFalso :: Interpretacion -> Literal -> Bool
 literalFalso [] _ = False
@@ -149,9 +155,11 @@ reducirClausula i = filter (not . literalFalso i)
 red :: Estado -> Estado
 red (i, cs) = (i, map (reducirClausula i) cs)
 
+{-
 =========================
    EJERCICIO 6 (SEP)
 =========================
+-}
 
 negar :: Literal -> Literal
 negar (Var x)     = Not (Var x)
