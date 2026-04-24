@@ -33,21 +33,6 @@ type Estado = ( Interpretacion , [Clausula])
 data ArbolDPLL = Node Estado ArbolDPLL | Branch Estado ArbolDPLL ArbolDPLL | Void deriving Show
 
 {-
-Coso random de la clase
-esUnitaria :: Clausula -> Bool
-esUnitaria [x] = True
-esUnitaria xs = False
-
-obtenerNombre :: Literal -> String
-obtenerNombre (Var x) = x
-obtenerNombre (Not (Var x)) = x
-
-tieneInterpretacion :: String -> Interpretacion -> Bool
-tieneInterpretacion _ [] = False
-tieneInterpretacion x ((y,b):ys) = if x == y
-                            then True
-                            else tieneInterpretacion x ys
-
 =========================
 AUXILIARES
 =========================
@@ -94,7 +79,12 @@ conflict (_, x:xs) = if x == []
                     then True
                     else conflict (([], xs))
 
---Ejercicio 2
+{-
+=========================
+   EJERCICIO 1
+=========================
+-}
+
 success :: Estado -> Bool
 success (_, []) = True
 success _       = False
@@ -174,15 +164,113 @@ sep l (i, cs) =
 
 --IMPLEMENTACION PARTE 2
 
+{-
+=========================
+   EJERCICIO 1
+=========================
+-}
 
---Ejercicio 1
+contarLiteral :: Literal -> Clausula -> Int
+contarLiteral _ [] = 0
+contarLiteral l (x:xs)
+    | l == x    = 1 + contarLiteral l xs
+    | otherwise = contarLiteral l xs
+
+aparicionesLiteral :: Literal -> [Clausula] -> Int
+aparicionesLiteral _ [] = 0
+aparicionesLiteral l (c:cs) = contarLiteral l c + aparicionesLiteral l cs
+
+obtenerLiterales :: [Clausula] -> [Literal]
+obtenerLiterales [] = []
+obtenerLiterales (c:cs) = c ++ obtenerLiterales cs
+
+mejorLiteral :: [Clausula] -> Literal -> Literal -> Literal
+mejorLiteral cs l1 l2 =
+    if aparicionesLiteral l1 cs >= aparicionesLiteral l2 cs then l1 else l2
+
 heuristicsLiteral :: [Clausula] -> Literal
-heuristicsLiteral = undefined
+heuristicsLiteral cs = foldr1 (mejorLiteral cs) (quitarRepetidos (obtenerLiterales cs))
 
---EJERCICIO 2
+{-
+=========================
+   EJERCICIO 2
+=========================
+-}
+
+probarCasos :: Literal -> Estado -> Interpretacion
+probarCasos l (interp, claus) =
+    let ((i1, c1), (i2, c2)) = sep l (interp, claus)
+        res1 = dpllAux (red (elim (i1, c1)))
+        in if not (null res1) then res1 else dpllAux (red (elim (i2, c2)))
+
+dpllAux :: Estado -> Interpretacion
+dpllAux (interp, clausulasPend)
+    | conflict (interp, clausulasPend) = []
+    | success (interp, clausulasPend)  = interp
+    | otherwise =
+        let (nuevaInterp, nuevasClausulasPend) = unit (interp, clausulasPend)
+        in if (nuevaInterp, nuevasClausulasPend) /= (interp, clausulasPend)
+           then dpllAux (red (elim (nuevaInterp, nuevasClausulasPend)))
+           else probarCasos (heuristicsLiteral clausulasPend) (interp, clausulasPend)
+
 dpll :: [Clausula] -> Interpretacion
-dpll = undefined
+dpll c = dpllAux ([], c)
 
---EXTRA
+{-
+=========================
+   EXTRA
+=========================
+-}
+
 dpll2 :: Prop -> Interpretacion
-dpll2 = undefined
+dpll2 f = dpll (clausulas (fnc f))
+
+--Codigo de la practica 3
+fnn :: Prop -> Prop
+fnn (Cons x) = Cons x
+fnn (Var p1) = Var p1
+fnn (Not (Not f1)) = fnn f1
+fnn (Not (And f1 f2)) = fnn (Or (fnn (Not f1)) (fnn (Not f2)))
+fnn (Not (Or f1 f2)) = fnn (And (fnn (Not f1)) (fnn (Not f2)))
+fnn (Impl f1 f2) = fnn (Or (Not f1) f2)
+fnn (Syss f1 f2) = fnn (And (Impl f1 f2) (Impl f2 f1))
+fnn (And f1 f2) = And (fnn f1) (fnn f2)
+fnn (Or f1 f2) = Or (fnn f1) (fnn f2)
+fnn (Not f1) = Not (fnn f1)
+
+fnc :: Prop -> Prop
+fnc prop = fncAux (fnn prop)
+
+fncAux :: Prop -> Prop
+fncAux (And a b) = And (fncAux a) (fncAux b)
+fncAux (Or a b) = distribuir (fncAux a) (fncAux b)
+fncAux x = x
+
+distribuir :: Prop -> Prop -> Prop
+distribuir f1 (And f2 f3) = And (distribuir f1 f2) (distribuir f1 f3)
+distribuir (And f1 f2) f3 = And (distribuir f1 f3) (distribuir f2 f3)
+distribuir f1 f2 = Or f1 f2
+
+clausulas :: Prop -> [Clausula]
+clausulas (Cons x) = [[]]
+clausulas (Var p) = [[Var p]]
+clausulas (Not p) = [[Not p]]
+clausulas (Or p q) = [clausulasAux (Or p q)]
+clausulas (And p q) = clausulas p ++ clausulas q
+
+pertenece :: Eq a => a -> [a] -> Bool
+pertenece _ [] = False
+pertenece x (y:ys) = x == y || pertenece x ys
+
+clausulasAux :: Prop -> Clausula
+clausulasAux (Cons _) = []
+clausulasAux (Var p) = [Var p]
+clausulasAux (Not p) = [Not p]
+clausulasAux (Or f1 f2) = quitarRepetidos (clausulasAux(f1) ++ clausulasAux (f2))
+clausulasAux x = []
+
+quitarRepetidos :: Eq a => [a] -> [a]
+quitarRepetidos [] = []
+quitarRepetidos (x:xs)
+    | pertenece x xs = quitarRepetidos xs
+    | otherwise = x : quitarRepetidos xs
